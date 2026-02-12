@@ -40,12 +40,11 @@ def consumo_populacao(hora):
 A, B, C, Principal = boia_poco_off, boia_B_on, boia_C_off, 100
 poco_ligado = False
 tratamento_ligado = False
-boia_B_armada = True
 recalque_ligado = False
 
 # Histórico
 hist_A, hist_B, hist_C, hist_Principal = [A], [B], [C], [Principal]
-bloqueios_recalque = []
+recalque_on_points, bloqueios_recalque = [], []
 
 # Contadores
 horas_poco = horas_tratamento = horas_recalque = 0
@@ -61,8 +60,7 @@ for t in range(1, horas+1):
 
     # Poço
     if A <= boia_poco_on and not poco_ligado:
-        poco_ligado = True
-        partidas_poco += 1
+        poco_ligado = True; partidas_poco += 1
     if A >= boia_poco_off and poco_ligado:
         poco_ligado = False
     entrada_poco = vazao_poco if poco_ligado else 0
@@ -72,8 +70,7 @@ for t in range(1, horas+1):
     if A <= boia_trat_off and tratamento_ligado:
         tratamento_ligado = False
     if A >= boia_trat_on and (B < boia_B_on or C < boia_C_off) and not tratamento_ligado:
-        tratamento_ligado = True
-        partidas_tratamento += 1
+        tratamento_ligado = True; partidas_tratamento += 1
     saida_trat = vazao_trat if tratamento_ligado else 0
     if tratamento_ligado: horas_tratamento += 1
 
@@ -93,9 +90,9 @@ for t in range(1, horas+1):
     A = min(max(A,0), boia_poco_off); B = min(B, boia_B_on); C = min(C, boia_C_off)
 
     # Recalque
-    if Principal <= boia_principal_on and B > boia_B_off and boia_B_armada and not recalque_ligado:
-        recalque_ligado = True
-        partidas_recalque += 1
+    if Principal <= boia_principal_on and B > boia_B_off and not recalque_ligado:
+        recalque_ligado = True; partidas_recalque += 1
+        recalque_on_points.append((t, Principal))
 
     if recalque_ligado:
         falta = boia_principal_off - Principal
@@ -106,9 +103,7 @@ for t in range(1, horas+1):
         if Principal >= boia_principal_off: recalque_ligado = False
         if B <= boia_B_off:
             bloqueios_recalque.append((t, Principal))
-            boia_B_armada = False; recalque_ligado = False
-
-    if B >= boia_B_on: boia_B_armada = True
+            recalque_ligado = False
 
     # Histórico
     hist_A.append(A); hist_B.append(B); hist_C.append(C); hist_Principal.append(Principal)
@@ -119,6 +114,10 @@ ax.plot(hist_A, label="Reservatório A (Água Bruta)")
 ax.plot(hist_B, label="Reservatório B (Água Tratada)")
 ax.plot(hist_C, label="Reservatório C (Retrolavagem)")
 ax.plot(hist_Principal, label="Principal", color="red")
+
+if recalque_on_points:
+    rx, ry = zip(*recalque_on_points)
+    ax.scatter(rx, ry, color="green", marker="^", label="Recalque Ligado")
 
 if bloqueios_recalque:
     bx, by = zip(*bloqueios_recalque)
@@ -133,15 +132,14 @@ ax.legend(); ax.grid(True)
 ax.set_xticks(range(0, horas+1, 5))
 ax.set_xlabel("Tempo (horas)")
 ax.set_ylabel("Volume (m³)")
-ax.set_title("Simulação Integrada - Consumo Dinamico")
+ax.set_title("Simulação Integrada - Consumo Dinâmico")
 
 plt.subplots_adjust(bottom=0.25)
 
-# Texto com contadores
-texto = (
-    f"Partidas ({horas}h): Poço={partidas_poco}, Recalque={partidas_recalque}, Tratamento={partidas_tratamento}\n"
-    f"Horas ligadas ({horas}h): Poço={horas_poco}, Recalque={horas_recalque}, Tratamento={horas_tratamento}"
-)
-fig.text(0.5, 0.12, texto, ha="center", fontsize=10, bbox=dict(facecolor='white', alpha=0.7))
+# Painel de métricas
+col1, col2, col3 = st.columns(3)
+col1.metric("Poço", f"{partidas_poco} partidas", f"{horas_poco} h ligado")
+col2.metric("Tratamento", f"{partidas_tratamento} partidas", f"{horas_tratamento} h ligado")
+col3.metric("Recalque", f"{partidas_recalque} partidas", f"{horas_recalque} h ligado")
 
 st.pyplot(fig)
