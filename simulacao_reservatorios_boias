@@ -44,7 +44,7 @@ recalque_ligado = False
 
 # Histórico
 hist_A, hist_B, hist_C, hist_Principal = [A], [B], [C], [Principal]
-recalque_on_points, bloqueios_recalque = [], []
+recalque_start_points, bloqueios_recalque = [], []
 
 # Contadores
 horas_poco = horas_tratamento = horas_recalque = 0
@@ -103,7 +103,7 @@ for t in range(1, horas+1):
     # Recalque
     if Principal <= boia_principal_on and B > boia_B_off and not recalque_ligado:
         recalque_ligado = True; partidas_recalque += 1
-        recalque_on_points.append((t, Principal))
+        recalque_start_points.append((t, Principal))  # ponto azul
 
     if recalque_ligado:
         falta = boia_principal_off - Principal
@@ -126,9 +126,9 @@ ax.plot(hist_B, label="Reservatório B (Água Tratada)")
 ax.plot(hist_C, label="Reservatório C (Retrolavagem)")
 ax.plot(hist_Principal, label="Principal", color="red")
 
-if recalque_on_points:
-    rx, ry = zip(*recalque_on_points)
-    ax.scatter(rx, ry, color="green", marker="^", label="Recalque Ligado")
+if recalque_start_points:
+    sx, sy = zip(*recalque_start_points)
+    ax.scatter(sx, sy, color="blue", marker="^", label="Início Recalque")
 
 if bloqueios_recalque:
     bx, by = zip(*bloqueios_recalque)
